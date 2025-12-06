@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Crazy Road Multiplayer - Gallinas</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1e293b, #020617);
+      color: #e5e7eb;
+    }
+
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      text-align: center;
+    }
+
+    .info {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      text-align: center;
+    }
+
+    #game {
+      position: relative;
+      width: 360px;
+      height: 500px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75);
+      background: linear-gradient(#14532d 0 60px, #0b1120 60px 440px, #14532d 440px 100%);
+      border: 3px solid #111827;
+    }
+
+    .grass {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: repeating-linear-gradient(
+        45deg,
+        #14532d,
+        #14532d 6px,
+        #166534 6px,
+        #166534 12px
+      );
+      z-index: 1;
+    }
+
+    .grass.top {
+      top: 0;
+      border-bottom: 2px solid #0f172a;
+    }
+
+    .grass.bottom {
+      bottom: 0;
+      border-top: 2px solid #0f172a;
+    }
+
+    .lane {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: #020617;
+      border-top: 1px solid rgba(148, 163, 184, 0.4);
+      border-bottom: 1px solid rgba(15, 23, 42, 0.95);
+      z-index: 1;
+    }
+
+    .lane:nth-child(odd) {
+      background: #030712;
+    }
+
+    .lane::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 4px;
+      transform: translateY(-50%);
+      background-image: repeating-linear-gradient(
+        to right,
+        transparent 0 20px,
+        rgba(249, 250, 251, 0.7) 20px 40px
+      );
+      opacity: 0.8;
+    }
+
+    /* Gallinas (jugadores) */
+    .player {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .player img {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.7));
+    }
+
+    .player.self {
+      z-index: 4;
+    }
+
+    .player-label {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: #e5e7eb;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.92);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .overlay button {
+      margin-top: 4px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: none;
+      background: #10b981;
+      color: #ecfdf5;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 5px 12px rgba(16, 185, 129, 0.5);
+      transition: transform 0.05s, background 0.15s;
+    }
+
+    .overlay button:hover {
+      background: #059669;
+    }
+
+    .overlay button:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1>Crazy Road Multiplayer</h1>
+    <div class="info">
+      Abre esta misma URL en otra ventana o PC y verás las dos gallinas. Flechas ↑ ↓ ← → para moverte.
+    </div>
+
+    <div id="game">
+      <div class="grass top"></div>
+      <div class="grass bottom"></div>
+
+      <div class="lane" style="top: 60px;"></div>
+      <div class="lane" style="top: 120px;"></div>
+      <div class="lane" style="top: 180px;"></div>
+      <div class="lane" style="top: 240px;"></div>
+      <div class="lane" style="top: 300px;"></div>
+      <div class="lane" style="top: 360px;"></div>
+
+      <div id="overlay" class="overlay">
+        <div>Haz clic en "Entrar" y mueve tu gallina. Abre esta página en otra ventana para ver otro jugador.</div>
+        <button id="startBtn">▶ Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cliente de Socket.IO servido por el servidor -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const game = document.getElementById("game");
+    const overlay = document.getElementById("overlay");
+    const startBtn = document.getElementById("startBtn");
+
+    const gameWidth = 360;
+    const gameHeight = 500;
+    const moveStep = 20;
+    const playerSize = 30;
+
+    // Conectarse al servidor Socket.IO
+    const socket = io();
+
+    let myId = null;
+    let myX = gameWidth / 2;
+    let myY = gameHeight - 50;
+    const players = {}; // id -> elemento DOM
+
+    function createPlayerElement(id, isSelf) {
+      const el = document.createElement("div");
+      el.className = "player" + (isSelf ? " self" : "");
+      el.dataset.id = id;
+
+      const img = document.createElement("img");
+      img.src = "gallina.png"; // pon tu imagen de gallina en /public
+      img.alt = "Gallina";
+
+      const label = document.createElement("div");
+      label.className = "player-label";
+      label.textContent = isSelf ? "Tú" : id.slice(0, 4);
+
+      el.appendChild(img);
+      el.appendChild(label);
+      game.appendChild(el);
+      return el;
+    }
+
+    function updatePlayerPositionEl(id, x, y) {
+      const el = players[id];
+      if (!el) return;
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+    }
+
+    // --- Eventos de Socket.IO ---
+
+    socket.on("connect", () => {
+      myId = socket.id;
+    });
+
+    socket.on("currentPlayers", (serverPlayers) => {
+      // Crear elementos para todos los jugadores ya conectados
+      for (const id in serverPlayers) {
+        const p = serverPlayers[id];
+        const isSelf = id === socket.id;
+        const el = createPlayerElement(id, isSelf);
+        players[id] = el;
+        updatePlayerPositionEl(id, p.x, p.y);
+        if (isSelf) {
+          myX = p.x;
+          myY = p.y;
+        }
+      }
+    });
+
+    socket.on("newPlayer", (p) => {
+      if (players[p.id]) return;
+      const el = createPlayerElement(p.id, false);
+      players[p.id] = el;
+      updatePlayerPositionEl(p.id, p.x, p.y);
+    });
+
+    socket.on("playerMoved", (p) => {
+      updatePlayerPositionEl(p.id, p.x, p.y);
+    });
+
+    socket.on("playerDisconnected", (id) => {
+      const el = players[id];
+      if (el) {
+        el.remove();
+        delete players[id];
+      }
+    });
+
+    // --- Controles de movimiento ---
+
+    function sendMyPosition() {
+      socket.emit("playerMove", { x: myX, y: myY });
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (!myId) return;
+      let changed = false;
+
+      if (e.key === "ArrowLeft") {
+        myX = Math.max(20, myX - moveStep);
+        changed = true;
+      } else if (e.key === "ArrowRight") {
+        myX = Math.min(gameWidth - 20, myX + moveStep);
+        changed = true;
+      } else if (e.key === "ArrowUp") {
+        myY = Math.max(40, myY - moveStep);
+        changed = true;
+      } else if (e.key === "ArrowDown") {
+        myY = Math.min(gameHeight - 40, myY + moveStep);
+        changed = true;
+      }
+
+      if (changed) {
+        updatePlayerPositionEl(myId, myX, myY);
+        sendMyPosition();
+      }
+    });
+
+    startBtn.addEventListener("click", () => {
+      overlay.style.display = "none";
+    });
+  </script>
+</body>
+</html>
