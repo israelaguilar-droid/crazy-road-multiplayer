@@ -138,6 +138,13 @@
       opacity: 0.8;
     }
 
+    /* Bloque especial de CHECKPOINT */
+    .block.checkpoint-block {
+      background: radial-gradient(circle at 50% 0%, #facc15, #451a03);
+      border-top: 2px solid rgba(250, 204, 21, 0.9);
+      border-bottom: 2px solid rgba(250, 204, 21, 0.9);
+    }
+
     .player {
       position: absolute;
       width: 48px;
@@ -796,13 +803,67 @@
       }
       worldEl.style.height = WORLD_HEIGHT + "px";
       const totalBlocks = Math.floor(WORLD_HEIGHT / BLOCK_HEIGHT);
+
+      // índice del bloque donde está el checkpoint
+      const checkpointIndex = Math.round(CHECKPOINT_Y / BLOCK_HEIGHT - 0.5);
+
       for (let i = 0; i < totalBlocks; i++) {
         const block = document.createElement("div");
         block.classList.add("block");
-        block.classList.add(isRoadBlockIndex(i) ? "road" : "grass");
+
+        if (i === checkpointIndex) {
+          // Bloque especial: zona de checkpoint
+          block.classList.add("checkpoint-block");
+        } else {
+          block.classList.add(isRoadBlockIndex(i) ? "road" : "grass");
+        }
+
         block.style.top = i * BLOCK_HEIGHT + "px";
         worldEl.appendChild(block);
       }
+
+      // Capa visual encima del bloque de checkpoint
+      const checkpointLine = document.createElement("div");
+      checkpointLine.id = "checkpointLine";
+      checkpointLine.style.position = "absolute";
+      checkpointLine.style.left = "0";
+      checkpointLine.style.width = "100%";
+      checkpointLine.style.height = BLOCK_HEIGHT + "px";
+      checkpointLine.style.top = checkpointIndex * BLOCK_HEIGHT + "px";
+      checkpointLine.style.pointerEvents = "none";
+      checkpointLine.style.display = "flex";
+      checkpointLine.style.alignItems = "center";
+      checkpointLine.style.justifyContent = "center";
+      checkpointLine.style.flexDirection = "column";
+
+      checkpointLine.innerHTML = `
+        <div style="
+          width: 100%;
+          height: 4px;
+          background: repeating-linear-gradient(
+            to right,
+            rgba(251, 191, 36, 0.0) 0 30px,
+            rgba(251, 191, 36, 1) 30px 60px
+          );
+          box-shadow: 0 0 10px rgba(250, 204, 21, 0.9);
+          margin-bottom: 4px;
+        "></div>
+        <div style="
+          padding: 4px 12px;
+          border-radius: 999px;
+          background: rgba(15,23,42,0.9);
+          border: 1px solid rgba(250, 204, 21, 0.9);
+          color: #facc15;
+          font-size: 0.8rem;
+          font-weight: 700;
+          text-shadow: 0 0 6px rgba(0,0,0,0.8);
+          box-shadow: 0 0 12px rgba(250, 204, 21, 0.7);
+        ">
+          CHECKPOINT
+        </div>
+      `;
+
+      worldEl.appendChild(checkpointLine);
     }
 
     function updateCamera() {
@@ -1015,7 +1076,6 @@
       updatePlayerPositionEl(p.id, p.worldX, p.worldY);
     });
 
-    // <- handler importante
     socket.on("playerMoved", (p) => {
       if (!players[p.id]) return;
 
@@ -1028,8 +1088,6 @@
       }
 
       // Es MI jugador:
-      // si la diferencia es grande (choque, reset de checkpoint),
-      // aceptamos la posición del servidor para que se vea el respawn.
       const distY = Math.abs(myWorldY - p.worldY);
       const distX = Math.abs(myWorldX - p.worldX);
       const isBigJump = distY > 80 || distX > 80; // más de un bloque
@@ -1042,7 +1100,7 @@
         updatePlayerPositionEl(myId, p.worldX, p.worldY);
         updateCamera();
       }
-      // Si no es un salto grande, dejamos que mande el cliente (movimiento suave).
+      // Si no es salto grande, dejamos que mande el cliente.
     });
 
     socket.on("playerDisconnected", (id) => {
