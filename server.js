@@ -190,7 +190,8 @@ function registerWinTime(player) {
  *   avatarData,
  *   worldX, worldY,
  *   score, level,
- *   joinTime
+ *   joinTime,
+ *   lastWorldY
  * }
  */
 const players = {};
@@ -248,23 +249,25 @@ io.on("connection", (socket) => {
         console.log(`Intento de login fallido para usuario ${normUser}`);
         return cbError("Contraseña incorrecta para este usuario.");
       }
-      // Si el usuario ya existía y el displayName viene, podríamos permitir actualizarlo
-      // pero por ahora lo dejamos fijo al que ya tiene guardado.
     }
 
     const userRecord = users[normUser];
 
     const now = Date.now();
+    const startY = WORLD_HEIGHT - BLOCK_HEIGHT * 1.5;
+
     const p = {
       id: socket.id,
       userId: normUser,
       name: userRecord.displayName,
       avatarData: avatarData || "",
       worldX: 400,
-      worldY: WORLD_HEIGHT - BLOCK_HEIGHT * 1.5,
+      worldY: startY,
       score: 0,
       level: 0,
-      joinTime: now
+      joinTime: now,
+      // NUEVO: guardamos última Y conocida para detectar cruce del checkpoint
+      lastWorldY: startY
     };
     players[socket.id] = p;
 
@@ -302,14 +305,24 @@ io.on("connection", (socket) => {
     });
   });
 
+  // ===== playerMove con lógica de checkpoint corregida =====
+
   socket.on("playerMove", (pos) => {
     const player = players[socket.id];
     if (!player) return;
 
+    // posición anterior para detectar cruce del checkpoint
+    const prevY = player.worldY;
+
     player.worldX = pos.worldX;
     player.worldY = pos.worldY;
 
-    if (!winnerAnnounced && player.worldY <= CHECKPOINT_Y) {
+    // Solo contamos cuando cruza DESDE ABAJO hacia ARRIBA
+    if (
+      !winnerAnnounced &&
+      prevY > CHECKPOINT_Y &&          // estaba por debajo
+      player.worldY <= CHECKPOINT_Y   // ahora está en/por encima
+    ) {
       player.level += 1;
       if (player.level > MAX_LEVEL) player.level = MAX_LEVEL;
 
@@ -325,6 +338,9 @@ io.on("connection", (socket) => {
 
       resetPlayerPosition(player);
     }
+
+    // Guardamos la última Y conocida
+    player.lastWorldY = player.worldY;
 
     io.emit("playerMoved", {
       id: player.id,
