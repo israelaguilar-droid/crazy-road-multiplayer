@@ -266,7 +266,6 @@ io.on("connection", (socket) => {
       score: 0,
       level: 0,
       joinTime: now,
-      // NUEVO: guardamos última Y conocida para detectar cruce del checkpoint
       lastWorldY: startY
     };
     players[socket.id] = p;
@@ -305,23 +304,20 @@ io.on("connection", (socket) => {
     });
   });
 
-  // ===== playerMove con lógica de checkpoint corregida =====
-
   socket.on("playerMove", (pos) => {
     const player = players[socket.id];
     if (!player) return;
 
-    // posición anterior para detectar cruce del checkpoint
     const prevY = player.worldY;
 
     player.worldX = pos.worldX;
     player.worldY = pos.worldY;
 
-    // Solo contamos cuando cruza DESDE ABAJO hacia ARRIBA
+    // Solo contamos cuando cruza desde abajo hacia arriba el checkpoint
     if (
       !winnerAnnounced &&
-      prevY > CHECKPOINT_Y &&          // estaba por debajo
-      player.worldY <= CHECKPOINT_Y   // ahora está en/por encima
+      prevY > CHECKPOINT_Y &&
+      player.worldY <= CHECKPOINT_Y
     ) {
       player.level += 1;
       if (player.level > MAX_LEVEL) player.level = MAX_LEVEL;
@@ -336,10 +332,9 @@ io.on("connection", (socket) => {
         announceWinner(player);
       }
 
-      resetPlayerPosition(player);
+      resetPlayerPosition(player); // también emite playerMoved
     }
 
-    // Guardamos la última Y conocida
     player.lastWorldY = player.worldY;
 
     io.emit("playerMoved", {
@@ -419,8 +414,17 @@ function getScoreBoard() {
 }
 
 function resetPlayerPosition(p) {
+  // Posición inicial clara
   p.worldX = 400;
   p.worldY = WORLD_HEIGHT - BLOCK_HEIGHT * 1.5;
+  p.lastWorldY = p.worldY;
+
+  // Anunciamos el cambio a todos (incluido el propio jugador)
+  io.emit("playerMoved", {
+    id: p.id,
+    worldX: p.worldX,
+    worldY: p.worldY
+  });
 }
 
 function recalculateGameLevel() {
@@ -583,19 +587,17 @@ function checkCarCollisions() {
       const dx = Math.abs(p.worldX - car.worldX);
       const dy = Math.abs(p.worldY - car.worldY);
       if (dx < CAR_HALF_W + PLAYER_HALF && dy < CAR_HALF_H + PLAYER_HALF) {
+        // reposiciona y emite playerMoved
         resetPlayerPosition(p);
 
+        // Sonido de golpe solo para ese jugador
         io.to(id).emit("playerHit", {
           id: p.id,
           worldX: p.worldX,
           worldY: p.worldY
         });
 
-        io.emit("playerMoved", {
-          id: p.id,
-          worldX: p.worldX,
-          worldY: p.worldY
-        });
+        break; // ya chocó con un auto
       }
     }
   }

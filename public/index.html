@@ -948,7 +948,6 @@
       lastCoinCount = 0;
       gameEnded = false;
       updateLevelBanner(0, 0);
-      // NO tocamos players aquí; currentPlayers y rebuildAllPlayers se encargan
     }
 
     function formatMs(ms) {
@@ -971,13 +970,11 @@
     });
 
     socket.on("currentPlayers", (serverPlayers) => {
-      // limpiar players actuales
       for (const id in players) {
         if (players[id].el) players[id].el.remove();
         delete players[id];
       }
 
-      // guardar datos lógicos
       for (const id in serverPlayers) {
         const p = serverPlayers[id];
         players[id] = {
@@ -996,7 +993,6 @@
         }
       }
 
-      // recrear elementos con tiers actuales
       rebuildAllPlayers();
       updateCamera();
     });
@@ -1019,16 +1015,34 @@
       updatePlayerPositionEl(p.id, p.worldX, p.worldY);
     });
 
-    // IMPORTANTE: versión suavizada de playerMoved
+    // <- handler importante
     socket.on("playerMoved", (p) => {
-      // Para otros jugadores, sí actualizamos desde el servidor
-      if (p.id !== myId && players[p.id]) {
+      if (!players[p.id]) return;
+
+      // Si es otro jugador, siempre actualizamos desde el servidor
+      if (p.id !== myId) {
         players[p.id].worldX = p.worldX;
         players[p.id].worldY = p.worldY;
         updatePlayerPositionEl(p.id, p.worldX, p.worldY);
+        return;
       }
-      // Para mí mismo NO tocamos myWorldX/myWorldY ni la cámara aquí.
-      // Ya los actualizamos inmediatamente en el keydown.
+
+      // Es MI jugador:
+      // si la diferencia es grande (choque, reset de checkpoint),
+      // aceptamos la posición del servidor para que se vea el respawn.
+      const distY = Math.abs(myWorldY - p.worldY);
+      const distX = Math.abs(myWorldX - p.worldX);
+      const isBigJump = distY > 80 || distX > 80; // más de un bloque
+
+      if (isBigJump) {
+        myWorldX = p.worldX;
+        myWorldY = p.worldY;
+        players[myId].worldX = p.worldX;
+        players[myId].worldY = p.worldY;
+        updatePlayerPositionEl(myId, p.worldX, p.worldY);
+        updateCamera();
+      }
+      // Si no es un salto grande, dejamos que mande el cliente (movimiento suave).
     });
 
     socket.on("playerDisconnected", (id) => {
@@ -1068,7 +1082,6 @@
 
     socket.on("skinTiersUpdate", (tiers) => {
       skinTiers = tiers || {};
-      // reaplicar coronas y brillos a todos los jugadores ya existentes
       rebuildAllPlayers();
     });
 
@@ -1157,10 +1170,8 @@
         changed = true;
       }
       if (changed) {
-        // Actualizamos SOLO localmente
         updatePlayerPositionEl(myId, myWorldX, myWorldY);
         updateCamera();
-        // Y luego avisamos al servidor
         sendMyPosition();
       }
     });
