@@ -1019,17 +1019,16 @@
       updatePlayerPositionEl(p.id, p.worldX, p.worldY);
     });
 
+    // IMPORTANTE: versión suavizada de playerMoved
     socket.on("playerMoved", (p) => {
-      if (players[p.id]) {
+      // Para otros jugadores, sí actualizamos desde el servidor
+      if (p.id !== myId && players[p.id]) {
         players[p.id].worldX = p.worldX;
         players[p.id].worldY = p.worldY;
+        updatePlayerPositionEl(p.id, p.worldX, p.worldY);
       }
-      updatePlayerPositionEl(p.id, p.worldX, p.worldY);
-      if (p.id === myId) {
-        myWorldX = p.worldX;
-        myWorldY = p.worldY;
-        updateCamera();
-      }
+      // Para mí mismo NO tocamos myWorldX/myWorldY ni la cámara aquí.
+      // Ya los actualizamos inmediatamente en el keydown.
     });
 
     socket.on("playerDisconnected", (id) => {
@@ -1158,8 +1157,10 @@
         changed = true;
       }
       if (changed) {
+        // Actualizamos SOLO localmente
         updatePlayerPositionEl(myId, myWorldX, myWorldY);
         updateCamera();
+        // Y luego avisamos al servidor
         sendMyPosition();
       }
     });
