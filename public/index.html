@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Crazy Road Multiplayer - Mundo Vertical</title>
   <style>
     * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -25,8 +26,16 @@
       align-items: stretch;
       justify-content: center;
     }
-    @media (max-width: 1000px) {
-      .layout { flex-direction: column; height: auto; align-items: center; }
+    @media (max-width: 900px) {
+      body {
+        height: auto;
+        align-items: flex-start;
+      }
+      .layout {
+        flex-direction: column;
+        height: auto;
+        align-items: center;
+      }
     }
 
     .left-column {
@@ -35,8 +44,12 @@
       flex-direction: column;
       gap: 8px;
     }
-    @media (max-width: 1000px) {
-      .left-column { width: 100%; max-width: 800px; order: 2; }
+    @media (max-width: 900px) {
+      .left-column {
+        width: 100%;
+        max-width: 800px;
+        order: 3;
+      }
     }
 
     .right-column {
@@ -47,11 +60,23 @@
       align-items: center;
       justify-content: center;
     }
-    @media (max-width: 1000px) {
-      .right-column { flex-direction: column; align-items: center; order: 1; }
+    @media (max-width: 900px) {
+      .right-column {
+        flex-direction: column;
+        align-items: center;
+        order: 1;
+        width: 100%;
+      }
     }
 
-    .wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      width: 100%;
+    }
 
     h1 {
       margin: 0;
@@ -66,6 +91,10 @@
       text-align: center;
       max-width: 520px;
     }
+    @media (max-width: 900px) {
+      h1 { font-size: 1.3rem; }
+      .info { font-size: 0.8rem; padding: 0 4px; }
+    }
 
     #levelBanner {
       padding: 4px 12px;
@@ -77,6 +106,9 @@
       box-shadow: 0 0 10px rgba(34,197,94,0.6);
       min-width: 160px;
       text-align: center;
+    }
+    @media (max-width: 900px) {
+      #levelBanner { font-size: 0.9rem; }
     }
 
     #game {
@@ -90,7 +122,11 @@
       border: 3px solid #111827;
     }
     @media (max-width: 900px) {
-      #game { width: 100%; max-width: 800px; height: 500px; }
+      #game {
+        width: 100%;
+        max-width: 700px;
+        height: 420px;
+      }
     }
 
     #world {
@@ -98,6 +134,9 @@
       left: 0;
       top: 0;
       width: 800px;
+    }
+    @media (max-width: 900px) {
+      #world { width: 100%; }
     }
 
     .block {
@@ -148,7 +187,7 @@
     .player {
       position: absolute;
       width: 48px;
-      height: 64px; /* espacio para la corona */
+      height: 64px;
       transform: translate(-50%, -50%);
       z-index: 3;
       display: flex;
@@ -193,7 +232,6 @@
       filter: drop-shadow(0 0 4px rgba(0,0,0,0.7));
     }
 
-    /* Brillos especiales por tier (1..4) */
     .player.tier-1 .player-body {
       box-shadow: 0 0 20px rgba(168, 85, 247, 0.95);
       border-radius: 50%;
@@ -389,8 +427,13 @@
       max-width: 280px;
       height: 600px;
     }
-    @media (max-width: 1000px) {
-      .chat { max-width: 800px; width: 100%; height: 260px; }
+    @media (max-width: 900px) {
+      .chat {
+        max-width: 800px;
+        width: 100%;
+        height: 220px;
+        order: 2;
+      }
     }
     .chat-header {
       padding: 8px 10px;
@@ -446,8 +489,12 @@
       font-size: 0.8rem;
       max-width: 280px;
     }
-    @media (max-width: 1000px) {
-      .score-board { max-width: 800px; width: 100%; }
+    @media (max-width: 900px) {
+      .score-board {
+        max-width: 800px;
+        width: 100%;
+        order: 3;
+      }
     }
     .score-board h2 {
       margin: 0 0 6px 0;
@@ -505,6 +552,46 @@
     }
     .music-controls input[type="range"] {
       width: 80px;
+    }
+
+    /* Controles táctiles para móvil */
+    #touchControls {
+      display: none;
+      margin-top: 8px;
+      gap: 6px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #touchControls button {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      border: 1px solid #1f2937;
+      background: #111827;
+      color: #e5e7eb;
+      font-size: 1.4rem;
+      font-weight: 600;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    #touchControls button:active {
+      transform: scale(0.95);
+      background: #0f172a;
+    }
+    .touch-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+    @media (max-width: 900px) {
+      #touchControls {
+        display: flex;
+      }
     }
   </style>
 </head>
@@ -578,9 +665,21 @@
             <button id="playAgainBtn">Jugar de nuevo</button>
           </div>
         </div>
+
+        <!-- Controles táctiles (móvil) -->
+        <div id="touchControls">
+          <div class="touch-row">
+            <button id="btnUp">▲</button>
+          </div>
+          <div class="touch-row">
+            <button id="btnLeft">◀</button>
+            <button id="btnDown">▼</button>
+            <button id="btnRight">▶</button>
+          </div>
+        </div>
       </div>
 
-      <div style="display:flex; flex-direction:column; gap:8px;">
+      <div style="display:flex; flex-direction:column; gap:8px; width:100%; max-width:320px;">
         <div class="chat">
           <div class="chat-header">Chat</div>
           <div id="chatMessages" class="chat-messages"></div>
@@ -627,6 +726,11 @@
     const musicToggleBtn = document.getElementById("musicToggleBtn");
     const musicVolumeSlider = document.getElementById("musicVolume");
 
+    const btnUp = document.getElementById("btnUp");
+    const btnDown = document.getElementById("btnDown");
+    const btnLeft = document.getElementById("btnLeft");
+    const btnRight = document.getElementById("btnRight");
+
     const viewWidth = 800;
     const viewHeight = 600;
     const moveStep = 30;
@@ -651,6 +755,8 @@
     let gameEnded = false;
     let lastCoinCount = 0;
     let skinTiers = {}; // userId -> tier (1..4)
+
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // -------- MÚSICA --------
 
@@ -804,7 +910,6 @@
       worldEl.style.height = WORLD_HEIGHT + "px";
       const totalBlocks = Math.floor(WORLD_HEIGHT / BLOCK_HEIGHT);
 
-      // índice del bloque donde está el checkpoint
       const checkpointIndex = Math.round(CHECKPOINT_Y / BLOCK_HEIGHT - 0.5);
 
       for (let i = 0; i < totalBlocks; i++) {
@@ -812,7 +917,6 @@
         block.classList.add("block");
 
         if (i === checkpointIndex) {
-          // Bloque especial: zona de checkpoint
           block.classList.add("checkpoint-block");
         } else {
           block.classList.add(isRoadBlockIndex(i) ? "road" : "grass");
@@ -822,7 +926,6 @@
         worldEl.appendChild(block);
       }
 
-      // Capa visual encima del bloque de checkpoint
       const checkpointLine = document.createElement("div");
       checkpointLine.id = "checkpointLine";
       checkpointLine.style.position = "absolute";
@@ -931,7 +1034,6 @@
     }
 
     function rebuildAllPlayers() {
-      // borrar elementos actuales
       for (const id in players) {
         const p = players[id];
         if (p.el) {
@@ -939,7 +1041,6 @@
           p.el = null;
         }
       }
-      // recrear con tiers actuales
       for (const id in players) {
         const p = players[id];
         const isSelf = id === socket.id;
@@ -1079,7 +1180,6 @@
     socket.on("playerMoved", (p) => {
       if (!players[p.id]) return;
 
-      // Si es otro jugador, siempre actualizamos desde el servidor
       if (p.id !== myId) {
         players[p.id].worldX = p.worldX;
         players[p.id].worldY = p.worldY;
@@ -1087,10 +1187,9 @@
         return;
       }
 
-      // Es MI jugador:
       const distY = Math.abs(myWorldY - p.worldY);
       const distX = Math.abs(myWorldX - p.worldX);
-      const isBigJump = distY > 80 || distX > 80; // más de un bloque
+      const isBigJump = distY > 80 || distX > 80;
 
       if (isBigJump) {
         myWorldX = p.worldX;
@@ -1100,7 +1199,6 @@
         updatePlayerPositionEl(myId, p.worldX, p.worldY);
         updateCamera();
       }
-      // Si no es salto grande, dejamos que mande el cliente.
     });
 
     socket.on("playerDisconnected", (id) => {
@@ -1211,19 +1309,19 @@
       socket.emit("playerMove", { worldX: myWorldX, worldY: myWorldY });
     }
 
-    window.addEventListener("keydown", (e) => {
+    function handleMove(dir) {
       if (!myId || gameEnded) return;
       let changed = false;
-      if (e.key === "ArrowLeft") {
+      if (dir === "left") {
         myWorldX = Math.max(40, myWorldX - moveStep);
         changed = true;
-      } else if (e.key === "ArrowRight") {
+      } else if (dir === "right") {
         myWorldX = Math.min(viewWidth - 40, myWorldX + moveStep);
         changed = true;
-      } else if (e.key === "ArrowUp") {
+      } else if (dir === "up") {
         myWorldY = Math.max(40, myWorldY - moveStep);
         changed = true;
-      } else if (e.key === "ArrowDown") {
+      } else if (dir === "down") {
         myWorldY = Math.min(WORLD_HEIGHT - 40, myWorldY + moveStep);
         changed = true;
       }
@@ -1232,7 +1330,34 @@
         updateCamera();
         sendMyPosition();
       }
+    }
+
+    // Teclado (PC)
+    window.addEventListener("keydown", (e) => {
+      if (isMobile) return; // en móvil usamos botones
+      if (e.key === "ArrowLeft") { e.preventDefault(); handleMove("left"); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); handleMove("right"); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); handleMove("up"); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); handleMove("down"); }
     });
+
+    // Botones táctiles (móvil)
+    function bindTouchButton(btn, dir) {
+      if (!btn) return;
+      const handler = (ev) => {
+        ev.preventDefault();
+        handleMove(dir);
+      };
+      btn.addEventListener("click", handler);
+      btn.addEventListener("touchstart", handler);
+    }
+
+    if (isMobile) {
+      bindTouchButton(btnUp, "up");
+      bindTouchButton(btnDown, "down");
+      bindTouchButton(btnLeft, "left");
+      bindTouchButton(btnRight, "right");
+    }
 
     function updateMyLevelFromScoreboard(list) {
       if (!myId) return;
