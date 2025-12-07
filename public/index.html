@@ -133,10 +133,7 @@
       position: absolute;
       left: 0;
       top: 0;
-      width: 800px;
-    }
-    @media (max-width: 900px) {
-      #world { width: 100%; }
+      width: 100%;  /* importante: se adapta al ancho del game */
     }
 
     .block {
@@ -696,6 +693,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const worldEl = document.getElementById("world");
+    const gameEl = document.getElementById("game");
     const overlay = document.getElementById("overlay");
     const startBtn = document.getElementById("startBtn");
     const usernameInput = document.getElementById("usernameInput");
@@ -751,35 +749,35 @@
     let lastCoinCount = 0;
     let skinTiers = {}; // userId -> tier (1..4)
 
-    // Detección simple de móvil
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // Altura lógica de la cámara: en móvil ampliamos para ver más mundo
-    let cameraViewHeight = isMobile ? 900 : viewHeight;
+    // altura lógica de cámara: a partir del alto real del contenedor
+    let cameraViewHeight = gameEl.clientHeight || viewHeight;
 
-    // -------- MÚSICA --------
+    function refreshCameraViewHeight() {
+      cameraViewHeight = gameEl.clientHeight || viewHeight;
+    }
+    window.addEventListener("resize", () => {
+      refreshCameraViewHeight();
+      updateCamera();
+    });
 
+    // -------- MÚSICA (igual que antes) --------
     const MUSIC_PLAYLIST = [
       "publicmusic/tema1.mp3",
       "publicmusic/tema2.mp3",
       "publicmusic/tema3.mp3"
     ];
-
     let backgroundMusic = null;
     let musicEnabled = false;
     let currentTrack = null;
     let currentVolume = (Number(musicVolumeSlider?.value) || 40) / 100;
-
-    function applyVolume() {
-      if (backgroundMusic) backgroundMusic.volume = currentVolume;
-    }
-
+    function applyVolume() { if (backgroundMusic) backgroundMusic.volume = currentVolume; }
     function pickRandomTrack(exclude) {
       const candidates = MUSIC_PLAYLIST.filter(t => t !== exclude);
       if (!candidates.length) return MUSIC_PLAYLIST[0] || null;
       return candidates[Math.floor(Math.random() * candidates.length)];
     }
-
     function initMusic() {
       if (!MUSIC_PLAYLIST.length || backgroundMusic) return;
       currentTrack = pickRandomTrack(null);
@@ -794,33 +792,18 @@
         if (musicEnabled) backgroundMusic.play().catch(() => {});
       });
     }
-
     function playMusic() {
       if (!backgroundMusic) initMusic();
       if (!backgroundMusic) return;
       backgroundMusic.play()
-        .then(() => {
-          musicEnabled = true;
-          updateMusicButton();
-        })
-        .catch(() => {
-          musicEnabled = false;
-          updateMusicButton();
-        });
+        .then(() => { musicEnabled = true; updateMusicButton(); })
+        .catch(() => { musicEnabled = false; updateMusicButton(); });
     }
-
-    function pauseMusic() {
-      if (!backgroundMusic) return;
-      backgroundMusic.pause();
-      musicEnabled = false;
-      updateMusicButton();
-    }
-
+    function pauseMusic() { if (backgroundMusic) backgroundMusic.pause(); musicEnabled = false; updateMusicButton(); }
     function updateMusicButton() {
       if (!musicToggleBtn) return;
       musicToggleBtn.textContent = musicEnabled ? "🔊 Música" : "🔇 Música";
     }
-
     if (musicToggleBtn) {
       musicToggleBtn.addEventListener("click", () => {
         if (!backgroundMusic) initMusic();
@@ -829,7 +812,6 @@
         else pauseMusic();
       });
     }
-
     if (musicVolumeSlider) {
       musicVolumeSlider.addEventListener("input", () => {
         const v = Number(musicVolumeSlider.value);
@@ -839,14 +821,12 @@
     }
 
     // -------- FX --------
-
     const SFX_FILES = {
       coin: ["sfx/coin.mp3"],
       win: ["sfx/win.mp3"],
       lose: ["sfx/lose.mp3"],
-      hit: ["sfx/hit1.mp3", "sfx/hit2.mp3", "sfx/hit3.mp3"],
+      hit: ["sfx/hit1.mp3","sfx/hit2.mp3","sfx/hit3.mp3"],
     };
-
     function playSfx(key) {
       const entries = SFX_FILES[key];
       if (!entries || !entries.length) return;
@@ -858,7 +838,6 @@
     }
 
     // -------- Avatar --------
-
     function handleFiles(files) {
       if (!files || !files[0]) return;
       const file = files[0];
@@ -871,7 +850,6 @@
       };
       reader.readAsDataURL(file);
     }
-
     avatarDrop.addEventListener("click", () => avatarFileInput.click());
     avatarFileInput.addEventListener("change", (e) => handleFiles(e.target.files));
     avatarDrop.addEventListener("dragover", (e) => { e.preventDefault(); avatarDrop.classList.add("dragover"); });
@@ -883,7 +861,6 @@
     });
 
     // -------- Mundo y jugadores --------
-
     function isRoadBlockIndex(i) {
       if (i < 2) return false;
       const rel = i - 2;
@@ -904,19 +881,13 @@
       }
       worldEl.style.height = WORLD_HEIGHT + "px";
       const totalBlocks = Math.floor(WORLD_HEIGHT / BLOCK_HEIGHT);
-
       const checkpointIndex = Math.round(CHECKPOINT_Y / BLOCK_HEIGHT - 0.5);
 
       for (let i = 0; i < totalBlocks; i++) {
         const block = document.createElement("div");
         block.classList.add("block");
-
-        if (i === checkpointIndex) {
-          block.classList.add("checkpoint-block");
-        } else {
-          block.classList.add(isRoadBlockIndex(i) ? "road" : "grass");
-        }
-
+        if (i === checkpointIndex) block.classList.add("checkpoint-block");
+        else block.classList.add(isRoadBlockIndex(i) ? "road" : "grass");
         block.style.top = i * BLOCK_HEIGHT + "px";
         worldEl.appendChild(block);
       }
@@ -933,7 +904,6 @@
       checkpointLine.style.alignItems = "center";
       checkpointLine.style.justifyContent = "center";
       checkpointLine.style.flexDirection = "column";
-
       checkpointLine.innerHTML = `
         <div style="
           width: 100%;
@@ -960,32 +930,28 @@
           CHECKPOINT
         </div>
       `;
-
       worldEl.appendChild(checkpointLine);
     }
 
     function updateCamera() {
+      refreshCameraViewHeight();
       cameraWorldY = myWorldY;
-
       const halfView = cameraViewHeight / 2;
 
       if (cameraWorldY < halfView) cameraWorldY = halfView;
       if (cameraWorldY > WORLD_HEIGHT - halfView) cameraWorldY = WORLD_HEIGHT - halfView;
 
       const offsetY = -cameraWorldY + (cameraViewHeight / 2);
-
       worldEl.style.transform = `translateY(${offsetY}px)`;
     }
 
     function createPlayerElement(id, isSelf, name, avatarData, userId) {
       const el = document.createElement("div");
       const tier = userId && skinTiers ? (skinTiers[userId] || 0) : 0;
-
       let className = "player";
       if (isSelf) className += " self";
       if (tier >= 1 && tier <= 4) className += " tier-" + tier;
       el.className = className;
-
       el.dataset.id = id;
 
       const label = document.createElement("div");
@@ -999,21 +965,16 @@
       img.className = "avatar-img";
       img.src = avatarData && avatarData.trim() ? avatarData.trim() : "gallina.png";
       img.alt = name || "Jugador";
-      img.onerror = () => {
-        img.onerror = null;
-        img.src = "gallina.png";
-      };
+      img.onerror = () => { img.onerror = null; img.src = "gallina.png"; };
 
       if (tier >= 1 && tier <= 4) {
         const crown = document.createElement("div");
         crown.className = "crown";
-
         const crownImg = document.createElement("img");
         if (tier === 1) crownImg.src = "crown_purple.png";
         else if (tier === 2) crownImg.src = "crown_gold.png";
         else if (tier === 3) crownImg.src = "crown_silver.png";
         else if (tier === 4) crownImg.src = "crown_bronze.png";
-
         crown.appendChild(crownImg);
         body.appendChild(crown);
       }
@@ -1035,10 +996,7 @@
     function rebuildAllPlayers() {
       for (const id in players) {
         const p = players[id];
-        if (p.el) {
-          p.el.remove();
-          p.el = null;
-        }
+        if (p.el) p.el.remove();
       }
       for (const id in players) {
         const p = players[id];
@@ -1088,9 +1046,7 @@
         el.style.top = coin.worldY + "px";
       }
 
-      if (coins.length < lastCoinCount) {
-        playSfx("coin");
-      }
+      if (coins.length < lastCoinCount) playSfx("coin");
       lastCoinCount = coins.length;
 
       for (const [id, el] of coinEls.entries()) {
@@ -1119,7 +1075,6 @@
     }
 
     // -------- Socket eventos --------
-
     socket.on("connect", () => { myId = socket.id; });
 
     socket.on("worldConfig", (cfg) => {
@@ -1135,7 +1090,6 @@
         if (players[id].el) players[id].el.remove();
         delete players[id];
       }
-
       for (const id in serverPlayers) {
         const p = serverPlayers[id];
         players[id] = {
@@ -1146,21 +1100,18 @@
           worldY: p.worldY,
           el: null
         };
-
         if (id === socket.id) {
           myWorldX = p.worldX;
           myWorldY = p.worldY;
           myAvatarData = p.avatarData;
         }
       }
-
       rebuildAllPlayers();
       updateCamera();
     });
 
     socket.on("newPlayer", (p) => {
       if (players[p.id]) return;
-
       players[p.id] = {
         name: p.name,
         avatarData: p.avatarData,
@@ -1169,7 +1120,6 @@
         worldY: p.worldY,
         el: null
       };
-
       const isSelf = p.id === socket.id;
       const el = createPlayerElement(p.id, isSelf, p.name, p.avatarData, p.userId);
       players[p.id].el = el;
@@ -1189,7 +1139,6 @@
       const distY = Math.abs(myWorldY - p.worldY);
       const distX = Math.abs(myWorldX - p.worldX);
       const isBigJump = distY > 80 || distX > 80;
-
       if (isBigJump) {
         myWorldX = p.worldX;
         myWorldY = p.worldY;
@@ -1208,10 +1157,7 @@
 
     socket.on("carsUpdate", (cars) => syncCars(cars));
     socket.on("coinsUpdate", (coins) => syncCoins(coins));
-
-    socket.on("playerHit", () => {
-      playSfx("hit");
-    });
+    socket.on("playerHit", () => { playSfx("hit"); });
 
     socket.on("gameOver", (data) => {
       const { winnerId, winnerName, level, score, maxLevel, bestTimes } = data;
@@ -1221,7 +1167,6 @@
       gameEnded = true;
       gameOverRanking.innerHTML = renderRankingTable(bestTimes || []);
       gameOverOverlay.style.display = "flex";
-
       if (myId && winnerId === myId) playSfx("win");
       else playSfx("lose");
     });
@@ -1248,7 +1193,6 @@
     });
 
     // -------- Chat, marcador, ranking --------
-
     function formatTime(ts) {
       const d = new Date(ts);
       const h = d.getHours().toString().padStart(2,"0");
@@ -1333,14 +1277,14 @@
 
     // Teclado (PC)
     window.addEventListener("keydown", (e) => {
-      if (isMobile) return; // en móvil usamos botones
+      if (isMobile) return;
       if (e.key === "ArrowLeft") { e.preventDefault(); handleMove("left"); }
       else if (e.key === "ArrowRight") { e.preventDefault(); handleMove("right"); }
       else if (e.key === "ArrowUp") { e.preventDefault(); handleMove("up"); }
       else if (e.key === "ArrowDown") { e.preventDefault(); handleMove("down"); }
     });
 
-    // Botones táctiles (móvil)
+    // Botones táctiles
     function bindTouchButton(btn, dir) {
       if (!btn) return;
       const handler = (ev) => {
@@ -1350,7 +1294,6 @@
       btn.addEventListener("click", handler);
       btn.addEventListener("touchstart", handler);
     }
-
     if (isMobile) {
       bindTouchButton(btnUp, "up");
       bindTouchButton(btnDown, "down");
@@ -1371,7 +1314,6 @@
     }
 
     // -------- Login / registro --------
-
     function showLoginError(msg) {
       loginErrorEl.textContent = msg || "";
     }
@@ -1407,9 +1349,7 @@
       });
     });
 
-    playAgainBtn.addEventListener("click", () => {
-      socket.emit("restartGame");
-    });
+    playAgainBtn.addEventListener("click", () => { socket.emit("restartGame"); });
   </script>
 </body>
 </html>
