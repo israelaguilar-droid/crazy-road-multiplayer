@@ -177,7 +177,6 @@
       opacity: 0.8;
     }
 
-    /* Bloque especial de CHECKPOINT */
     .block.checkpoint-block {
       background: radial-gradient(circle at 50% 0%, #facc15, #451a03);
       border-top: 2px solid rgba(250, 204, 21, 0.9);
@@ -236,17 +235,14 @@
       box-shadow: 0 0 20px rgba(168, 85, 247, 0.95);
       border-radius: 50%;
     }
-
     .player.tier-2 .player-body {
       box-shadow: 0 0 18px rgba(234, 179, 8, 0.95);
       border-radius: 50%;
     }
-
     .player.tier-3 .player-body {
       box-shadow: 0 0 16px rgba(148, 163, 184, 0.95);
       border-radius: 50%;
     }
-
     .player.tier-4 .player-body {
       box-shadow: 0 0 14px rgba(161, 98, 7, 0.95);
       border-radius: 50%;
@@ -747,7 +743,6 @@
     let myWorldY = WORLD_HEIGHT - BLOCK_HEIGHT * 1.5;
     let cameraWorldY = myWorldY;
 
-    // players[id] = { name, avatarData, userId, worldX, worldY, el }
     const players = {};
     const carsEls = new Map();
     const coinEls = new Map();
@@ -756,7 +751,11 @@
     let lastCoinCount = 0;
     let skinTiers = {}; // userId -> tier (1..4)
 
+    // Detección simple de móvil
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Altura lógica de la cámara: en móvil ampliamos para ver más mundo
+    let cameraViewHeight = isMobile ? 900 : viewHeight;
 
     // -------- MÚSICA --------
 
@@ -845,11 +844,7 @@
       coin: ["sfx/coin.mp3"],
       win: ["sfx/win.mp3"],
       lose: ["sfx/lose.mp3"],
-      hit: [
-        "sfx/hit1.mp3",
-        "sfx/hit2.mp3",
-        "sfx/hit3.mp3",
-      ],
+      hit: ["sfx/hit1.mp3", "sfx/hit2.mp3", "sfx/hit3.mp3"],
     };
 
     function playSfx(key) {
@@ -971,10 +966,14 @@
 
     function updateCamera() {
       cameraWorldY = myWorldY;
-      const halfView = viewHeight / 2;
+
+      const halfView = cameraViewHeight / 2;
+
       if (cameraWorldY < halfView) cameraWorldY = halfView;
       if (cameraWorldY > WORLD_HEIGHT - halfView) cameraWorldY = WORLD_HEIGHT - halfView;
-      const offsetY = -cameraWorldY + halfView;
+
+      const offsetY = -cameraWorldY + (cameraViewHeight / 2);
+
       worldEl.style.transform = `translateY(${offsetY}px)`;
     }
 
