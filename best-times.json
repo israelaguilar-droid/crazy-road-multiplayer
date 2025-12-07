@@ -1,0 +1,59 @@
+{
+  "israel": {
+    "userId": "israel",
+    "name": "Elr4is",
+    "bestTimeMs": 16192,
+    "bestTimeAt": 1765060546939,
+    "wins": 13
+  },
+  "jujuju": {
+    "name": "jujuju",
+    "bestTimeMs": 26981,
+    "bestTimeAt": 1765057653799,
+    "wins": 4
+  },
+  "awdawd": {
+    "name": "awdawd",
+    "bestTimeMs": 33313,
+    "bestTimeAt": 1765052301114,
+    "wins": 2
+  },
+  "Gallina": {
+    "name": "Gallina",
+    "bestTimeMs": 262164,
+    "bestTimeAt": 1765052593741,
+    "wins": 1
+  },
+  "jeje": {
+    "name": "jeje",
+    "bestTimeMs": 127336,
+    "bestTimeAt": 1765057292029,
+    "wins": 1
+  },
+  "cristorey": {
+    "name": "cristorey",
+    "bestTimeMs": 20479,
+    "bestTimeAt": 1765058854590,
+    "wins": 8
+  },
+  "dante": {
+    "name": "dante",
+    "bestTimeMs": 42228,
+    "bestTimeAt": 1765057878454,
+    "wins": 1
+  },
+  "fddfd": {
+    "userId": "fddfd",
+    "name": "fdfdfd",
+    "bestTimeMs": 65929,
+    "bestTimeAt": 1765064139491,
+    "wins": 1
+  },
+  "sccscssc": {
+    "userId": "sccscssc",
+    "name": "cscssc",
+    "bestTimeMs": 24798,
+    "bestTimeAt": 1765064601630,
+    "wins": 3
+  }
+}

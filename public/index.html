@@ -2,13 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Crazy Road Multiplayer - Gallinas</title>
+  <title>Crazy Road Multiplayer - Mundo Vertical</title>
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     body {
       margin: 0;
       height: 100vh;
@@ -19,17 +15,48 @@
       color: #e5e7eb;
     }
 
-    .wrapper {
+    .layout {
+      display: flex;
+      gap: 16px;
+      padding: 12px;
+      max-width: 1200px;
+      width: 100%;
+      height: 100vh;
+      align-items: stretch;
+      justify-content: center;
+    }
+    @media (max-width: 1000px) {
+      .layout { flex-direction: column; height: auto; align-items: center; }
+    }
+
+    .left-column {
+      width: 260px;
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 8px;
     }
+    @media (max-width: 1000px) {
+      .left-column { width: 100%; max-width: 800px; order: 2; }
+    }
+
+    .right-column {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+    @media (max-width: 1000px) {
+      .right-column { flex-direction: column; align-items: center; order: 1; }
+    }
+
+    .wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
 
     h1 {
       margin: 0;
-      font-size: 1.4rem;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      font-size: 1.6rem;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
       text-align: center;
     }
 
@@ -37,24 +64,49 @@
       font-size: 0.85rem;
       color: #9ca3af;
       text-align: center;
+      max-width: 520px;
+    }
+
+    #levelBanner {
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: linear-gradient(to right, #22c55e, #16a34a);
+      color: #ecfdf5;
+      font-weight: 700;
+      font-size: 1rem;
+      box-shadow: 0 0 10px rgba(34,197,94,0.6);
+      min-width: 160px;
+      text-align: center;
     }
 
     #game {
       position: relative;
-      width: 360px;
-      height: 500px;
-      border-radius: 14px;
+      width: 800px;
+      height: 600px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75);
-      background: linear-gradient(#14532d 0 60px, #0b1120 60px 440px, #14532d 440px 100%);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.75);
+      background: #0b1120;
       border: 3px solid #111827;
     }
+    @media (max-width: 900px) {
+      #game { width: 100%; max-width: 800px; height: 500px; }
+    }
 
-    .grass {
+    #world {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 800px;
+    }
+
+    .block {
       position: absolute;
       left: 0;
       width: 100%;
-      height: 60px;
+      height: 80px;
+    }
+    .block.grass {
       background: repeating-linear-gradient(
         45deg,
         #14532d,
@@ -62,35 +114,15 @@
         #166534 6px,
         #166534 12px
       );
-      z-index: 1;
+      border-top: 1px solid #0f172a;
+      border-bottom: 1px solid #0f172a;
     }
-
-    .grass.top {
-      top: 0;
-      border-bottom: 2px solid #0f172a;
-    }
-
-    .grass.bottom {
-      bottom: 0;
-      border-top: 2px solid #0f172a;
-    }
-
-    .lane {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 60px;
+    .block.road {
       background: #020617;
-      border-top: 1px solid rgba(148, 163, 184, 0.4);
-      border-bottom: 1px solid rgba(15, 23, 42, 0.95);
-      z-index: 1;
+      border-top: 1px solid rgba(148,163,184,0.4);
+      border-bottom: 1px solid rgba(15,23,42,0.95);
     }
-
-    .lane:nth-child(odd) {
-      background: #030712;
-    }
-
-    .lane::before {
+    .block.road::before {
       content: "";
       position: absolute;
       left: 0;
@@ -100,230 +132,1089 @@
       transform: translateY(-50%);
       background-image: repeating-linear-gradient(
         to right,
-        transparent 0 20px,
-        rgba(249, 250, 251, 0.7) 20px 40px
+        transparent 0 40px,
+        rgba(249,250,251,0.7) 40px 80px
       );
       opacity: 0.8;
     }
 
-    /* Gallinas (jugadores) */
     .player {
       position: absolute;
-      width: 30px;
-      height: 30px;
+      width: 48px;
+      height: 64px; /* espacio para la corona */
       transform: translate(-50%, -50%);
       z-index: 3;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: center;
     }
+    .player.self { z-index: 4; }
 
-    .player img {
-      width: 30px;
-      height: 30px;
+    .player-body {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.15s;
+    }
+
+    .player img.avatar-img {
+      width: 48px;
+      height: 48px;
       object-fit: contain;
       image-rendering: crisp-edges;
       image-rendering: pixelated;
-      filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.7));
+      filter: drop-shadow(0 0 5px rgba(0,0,0,0.8));
     }
 
-    .player.self {
-      z-index: 4;
+    .player .crown {
+      position: absolute;
+      left: 50%;
+      top: -26px;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 24px;
+      pointer-events: none;
+    }
+
+    .player .crown img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 4px rgba(0,0,0,0.7));
+    }
+
+    /* Brillos especiales por tier (1..4) */
+    .player.tier-1 .player-body {
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.95);
+      border-radius: 50%;
+    }
+
+    .player.tier-2 .player-body {
+      box-shadow: 0 0 18px rgba(234, 179, 8, 0.95);
+      border-radius: 50%;
+    }
+
+    .player.tier-3 .player-body {
+      box-shadow: 0 0 16px rgba(148, 163, 184, 0.95);
+      border-radius: 50%;
+    }
+
+    .player.tier-4 .player-body {
+      box-shadow: 0 0 14px rgba(161, 98, 7, 0.95);
+      border-radius: 50%;
     }
 
     .player-label {
       position: absolute;
-      top: -18px;
+      top: -38px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 10px;
+      font-size: 11px;
       color: #e5e7eb;
-      text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 0 4px rgba(0,0,0,0.8);
+      white-space: nowrap;
+    }
+
+    .car {
+      position: absolute;
+      width: 80px;
+      height: 50px;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(to right, #dc2626, #b91c1c);
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.7);
+      z-index: 2;
+    }
+    .car::before,
+    .car::after {
+      content: "";
+      position: absolute;
+      bottom: -6px;
+      width: 18px;
+      height: 10px;
+      background: #020617;
+      border-radius: 6px;
+    }
+    .car::before { left: 10px; }
+    .car::after { right: 10px; }
+
+    .coin {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(250,250,250,0.9);
+      z-index: 999;
+    }
+    .coin.grass {
+      background: radial-gradient(circle at 30% 30%, #f9fafb, #9ca3af);
+      border: 3px solid #6b7280;
+      box-shadow: 0 0 10px rgba(229,231,235,0.9);
+    }
+    .coin.road {
+      background: radial-gradient(circle at 30% 30%, #fde68a, #f59e0b);
+      border: 3px solid #b45309;
+      box-shadow: 0 0 10px rgba(251,191,36,0.9);
     }
 
     .overlay {
       position: absolute;
       inset: 0;
-      background: rgba(15, 23, 42, 0.92);
+      background: rgba(15,23,42,0.94);
       z-index: 10;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
       text-align: center;
       padding: 12px;
     }
-
     .overlay button {
       margin-top: 4px;
-      padding: 6px 14px;
+      padding: 8px 18px;
       border-radius: 999px;
       border: none;
       background: #10b981;
       color: #ecfdf5;
       font-weight: 600;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      box-shadow: 0 5px 12px rgba(16, 185, 129, 0.5);
+      box-shadow: 0 5px 12px rgba(16,185,129,0.5);
       transition: transform 0.05s, background 0.15s;
     }
+    .overlay button:hover { background: #059669; }
+    .overlay button:active { transform: scale(0.97); }
 
-    .overlay button:hover {
-      background: #059669;
+    .overlay input {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #4b5563;
+      width: 100%;
+      max-width: 260px;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.85rem;
     }
 
-    .overlay button:active {
-      transform: scale(0.97);
+    #loginError {
+      color: #f97373;
+      font-size: 0.8rem;
+      min-height: 1.0em;
+    }
+
+    #gameOverOverlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15,23,42,0.96);
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-align: center;
+      padding: 16px;
+    }
+    #gameOverOverlay h2 {
+      margin: 0;
+      font-size: 2.0rem;
+    }
+    #winnerNameBig {
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: #facc15;
+      text-shadow: 0 0 16px rgba(250,204,21,0.8);
+    }
+    #gameOverText {
+      margin: 0;
+      font-size: 1.0rem;
+      color: #d1d5db;
+    }
+    #gameOverRanking {
+      margin-top: 8px;
+      max-width: 320px;
+      width: 100%;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    .avatar-drop {
+      width: 160px;
+      height: 160px;
+      border-radius: 16px;
+      border: 2px dashed #4b5563;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      margin-top: 4px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      background: rgba(15,23,42,0.8);
+    }
+    .avatar-drop.dragover {
+      border-color: #10b981;
+      background: rgba(16,185,129,0.1);
+    }
+    .avatar-preview { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-placeholder { padding: 6px; text-align: center; }
+    .hidden-file-input { display: none; }
+
+    .chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: rgba(15,23,42,0.9);
+      border-radius: 14px;
+      border: 1px solid #1f2937;
+      box-shadow: 0 16px 30px rgba(0,0,0,0.5);
+      overflow: hidden;
+      max-width: 280px;
+      height: 600px;
+    }
+    @media (max-width: 1000px) {
+      .chat { max-width: 800px; width: 100%; height: 260px; }
+    }
+    .chat-header {
+      padding: 8px 10px;
+      background: #020617;
+      border-bottom: 1px solid #111827;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+    .chat-messages {
+      flex: 1;
+      padding: 8px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 4px;
+      padding: 6px;
+      border-top: 1px solid #111827;
+      background: #020617;
+    }
+    .chat-input-row input {
+      flex: 1;
+      padding: 5px 8px;
+      border-radius: 8px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.8rem;
+    }
+    .chat-input-row button {
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: none;
+      background: #10b981;
+      color: #ecfdf5;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chat-input-row button:hover { background: #059669; }
+    .chat-message { margin-bottom: 4px; line-height: 1.3; }
+    .chat-message span.name { font-weight: 600; color: #a5b4fc; }
+    .chat-message span.time { color: #6b7280; font-size: 0.7rem; margin-left: 4px; }
+
+    .score-board {
+      background: rgba(15,23,42,0.9);
+      border-radius: 14px;
+      border: 1px solid #1f2937;
+      box-shadow: 0 16px 30px rgba(0,0,0,0.5);
+      padding: 8px;
+      font-size: 0.8rem;
+      max-width: 280px;
+    }
+    @media (max-width: 1000px) {
+      .score-board { max-width: 800px; width: 100%; }
+    }
+    .score-board h2 {
+      margin: 0 0 6px 0;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #111827;
+      padding-bottom: 4px;
+    }
+    .score-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+    .score-row span.name {
+      max-width: 160px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .score-row span.score { color: #22c55e; font-weight: 600; }
+
+    .records-board {
+      background: rgba(15,23,42,0.9);
+      border-radius: 14px;
+      border: 1px solid #1f2937;
+      box-shadow: 0 16px 30px rgba(0,0,0,0.5);
+      padding: 8px;
+      font-size: 0.8rem;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .records-board h2 {
+      margin: 0 0 6px 0;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #111827;
+      padding-bottom: 4px;
+    }
+    .record-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+    .record-row span.name {
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .record-row span.time {
+      color: #eab308;
+      font-weight: 600;
+    }
+
+    .music-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+    .music-controls input[type="range"] {
+      width: 80px;
     }
   </style>
 </head>
 <body>
-  <div class="wrapper">
-    <h1>Crazy Road Multiplayer</h1>
-    <div class="info">
-      Abre esta misma URL en otra ventana o PC y verás las dos gallinas. Flechas ↑ ↓ ← → para moverte.
+  <div class="layout">
+    <div class="left-column">
+      <div class="records-board">
+        <h2>Ranking de récords (mejor tiempo a nivel 10)</h2>
+        <div id="recordsList"></div>
+      </div>
     </div>
 
-    <div id="game">
-      <div class="grass top"></div>
-      <div class="grass bottom"></div>
+    <div class="right-column">
+      <div class="wrapper">
+        <h1>Crazy Road Multiplayer</h1>
+        <div class="info">
+          Mundo vertical con tramos de varias calles y zonas de pasto para descansar.  
+          Esquiva los autos, recoge monedas plateadas en el pasto (+0.5)  
+          y monedas doradas en la carretera (+1).  
+          Sube de nivel pasando el checkpoint.  
+          El primero que llegue a 10 puntos gana la partida.
+        </div>
 
-      <div class="lane" style="top: 60px;"></div>
-      <div class="lane" style="top: 120px;"></div>
-      <div class="lane" style="top: 180px;"></div>
-      <div class="lane" style="top: 240px;"></div>
-      <div class="lane" style="top: 300px;"></div>
-      <div class="lane" style="top: 360px;"></div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:4px; margin-bottom:4px;">
+          <div id="levelBanner">Nivel 0 · 0.0 pts</div>
+          <div class="music-controls">
+            <button id="musicToggleBtn"
+                    style="padding:4px 8px; border-radius:999px; border:none; font-size:0.75rem;
+                           cursor:pointer; background:#1f2937; color:#e5e7eb;">
+              🔇 Música
+            </button>
+            <span>Vol:</span>
+            <input id="musicVolume" type="range" min="0" max="100" value="40" />
+          </div>
+        </div>
 
-      <div id="overlay" class="overlay">
-        <div>Haz clic en "Entrar" y mueve tu gallina. Abre esta página en otra ventana para ver otro jugador.</div>
-        <button id="startBtn">▶ Entrar</button>
+        <div id="game">
+          <div id="world"></div>
+
+          <!-- Overlay de login/registro -->
+          <div id="overlay" class="overlay">
+            <h2>Ingresa o crea tu cuenta</h2>
+            <p style="font-size: 0.8rem; color: #9ca3af; max-width: 280px;">
+              Si el usuario no existe, se creará con esa contraseña.  
+              Si ya existe, deberás escribir la contraseña correcta.
+            </p>
+
+            <input id="usernameInput" type="text" placeholder="Usuario (sin espacios)" maxlength="20" />
+            <input id="passwordInput" type="password" placeholder="Contraseña" maxlength="32" />
+            <input id="displayNameInput" type="text" placeholder="Nombre visible (opcional)" maxlength="16" />
+
+            <div id="avatarDrop" class="avatar-drop">
+              <div id="avatarPlaceholder" class="avatar-placeholder">
+                Arrastra una imagen aquí<br />o haz clic
+              </div>
+              <img id="avatarPreview" class="avatar-preview" style="display:none;" />
+              <input id="avatarFile" class="hidden-file-input" type="file" accept="image/*" />
+            </div>
+
+            <div id="loginError"></div>
+
+            <button id="startBtn">▶ Entrar</button>
+          </div>
+
+          <div id="gameOverOverlay">
+            <h2>¡Fin de la partida!</h2>
+            <div>Ganador:</div>
+            <div id="winnerNameBig"></div>
+            <p id="gameOverText"></p>
+            <div id="gameOverRanking"></div>
+            <button id="playAgainBtn">Jugar de nuevo</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div class="chat">
+          <div class="chat-header">Chat</div>
+          <div id="chatMessages" class="chat-messages"></div>
+          <div class="chat-input-row">
+            <input id="chatInput" type="text" placeholder="Escribe un mensaje y pulsa Enter..." />
+            <button id="chatSendBtn">Enviar</button>
+          </div>
+        </div>
+
+        <div class="score-board">
+          <h2>Marcador actual</h2>
+          <div id="scoreList"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Cliente de Socket.IO servido por el servidor -->
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const game = document.getElementById("game");
+    const worldEl = document.getElementById("world");
     const overlay = document.getElementById("overlay");
     const startBtn = document.getElementById("startBtn");
+    const usernameInput = document.getElementById("usernameInput");
+    const passwordInput = document.getElementById("passwordInput");
+    const displayNameInput = document.getElementById("displayNameInput");
+    const loginErrorEl = document.getElementById("loginError");
+    const avatarDrop = document.getElementById("avatarDrop");
+    const avatarPlaceholder = document.getElementById("avatarPlaceholder");
+    const avatarPreview = document.getElementById("avatarPreview");
+    const avatarFileInput = document.getElementById("avatarFile");
 
-    const gameWidth = 360;
-    const gameHeight = 500;
-    const moveStep = 20;
-    const playerSize = 30;
+    const gameOverOverlay = document.getElementById("gameOverOverlay");
+    const gameOverText = document.getElementById("gameOverText");
+    const gameOverRanking = document.getElementById("gameOverRanking");
+    const winnerNameBig = document.getElementById("winnerNameBig");
+    const playAgainBtn = document.getElementById("playAgainBtn");
 
-    // Conectarse al servidor Socket.IO
+    const chatMessages = document.getElementById("chatMessages");
+    const chatInput = document.getElementById("chatInput");
+    const chatSendBtn = document.getElementById("chatSendBtn");
+    const scoreList = document.getElementById("scoreList");
+    const recordsList = document.getElementById("recordsList");
+    const levelBanner = document.getElementById("levelBanner");
+    const musicToggleBtn = document.getElementById("musicToggleBtn");
+    const musicVolumeSlider = document.getElementById("musicVolume");
+
+    const viewWidth = 800;
+    const viewHeight = 600;
+    const moveStep = 30;
+
+    let BLOCK_HEIGHT = 80;
+    let WORLD_HEIGHT = 80 * 40;
+    let CHECKPOINT_Y = 80 * 5;
+
+    let myAvatarData = "";
     const socket = io();
-
     let myId = null;
-    let myX = gameWidth / 2;
-    let myY = gameHeight - 50;
-    const players = {}; // id -> elemento DOM
+    let myUserId = null;
+    let myWorldX = viewWidth / 2;
+    let myWorldY = WORLD_HEIGHT - BLOCK_HEIGHT * 1.5;
+    let cameraWorldY = myWorldY;
 
-    function createPlayerElement(id, isSelf) {
+    // players[id] = { name, avatarData, userId, worldX, worldY, el }
+    const players = {};
+    const carsEls = new Map();
+    const coinEls = new Map();
+
+    let gameEnded = false;
+    let lastCoinCount = 0;
+    let skinTiers = {}; // userId -> tier (1..4)
+
+    // -------- MÚSICA --------
+
+    const MUSIC_PLAYLIST = [
+      "publicmusic/tema1.mp3",
+      "publicmusic/tema2.mp3",
+      "publicmusic/tema3.mp3"
+    ];
+
+    let backgroundMusic = null;
+    let musicEnabled = false;
+    let currentTrack = null;
+    let currentVolume = (Number(musicVolumeSlider?.value) || 40) / 100;
+
+    function applyVolume() {
+      if (backgroundMusic) backgroundMusic.volume = currentVolume;
+    }
+
+    function pickRandomTrack(exclude) {
+      const candidates = MUSIC_PLAYLIST.filter(t => t !== exclude);
+      if (!candidates.length) return MUSIC_PLAYLIST[0] || null;
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    function initMusic() {
+      if (!MUSIC_PLAYLIST.length || backgroundMusic) return;
+      currentTrack = pickRandomTrack(null);
+      backgroundMusic = new Audio(currentTrack);
+      backgroundMusic.loop = false;
+      applyVolume();
+      backgroundMusic.addEventListener("ended", () => {
+        const next = pickRandomTrack(currentTrack);
+        currentTrack = next;
+        backgroundMusic.src = next;
+        applyVolume();
+        if (musicEnabled) backgroundMusic.play().catch(() => {});
+      });
+    }
+
+    function playMusic() {
+      if (!backgroundMusic) initMusic();
+      if (!backgroundMusic) return;
+      backgroundMusic.play()
+        .then(() => {
+          musicEnabled = true;
+          updateMusicButton();
+        })
+        .catch(() => {
+          musicEnabled = false;
+          updateMusicButton();
+        });
+    }
+
+    function pauseMusic() {
+      if (!backgroundMusic) return;
+      backgroundMusic.pause();
+      musicEnabled = false;
+      updateMusicButton();
+    }
+
+    function updateMusicButton() {
+      if (!musicToggleBtn) return;
+      musicToggleBtn.textContent = musicEnabled ? "🔊 Música" : "🔇 Música";
+    }
+
+    if (musicToggleBtn) {
+      musicToggleBtn.addEventListener("click", () => {
+        if (!backgroundMusic) initMusic();
+        if (!backgroundMusic) return;
+        if (backgroundMusic.paused) playMusic();
+        else pauseMusic();
+      });
+    }
+
+    if (musicVolumeSlider) {
+      musicVolumeSlider.addEventListener("input", () => {
+        const v = Number(musicVolumeSlider.value);
+        currentVolume = Math.min(Math.max(v, 0), 100) / 100;
+        applyVolume();
+      });
+    }
+
+    // -------- FX --------
+
+    const SFX_FILES = {
+      coin: ["sfx/coin.mp3"],
+      win: ["sfx/win.mp3"],
+      lose: ["sfx/lose.mp3"],
+      hit: [
+        "sfx/hit1.mp3",
+        "sfx/hit2.mp3",
+        "sfx/hit3.mp3",
+      ],
+    };
+
+    function playSfx(key) {
+      const entries = SFX_FILES[key];
+      if (!entries || !entries.length) return;
+      const src = entries[Math.floor(Math.random() * entries.length)];
+      if (!src) return;
+      const audio = new Audio(src);
+      audio.volume = 0.8;
+      audio.play().catch(() => {});
+    }
+
+    // -------- Avatar --------
+
+    function handleFiles(files) {
+      if (!files || !files[0]) return;
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        myAvatarData = e.target.result;
+        avatarPreview.src = myAvatarData;
+        avatarPreview.style.display = "block";
+        avatarPlaceholder.style.display = "none";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    avatarDrop.addEventListener("click", () => avatarFileInput.click());
+    avatarFileInput.addEventListener("change", (e) => handleFiles(e.target.files));
+    avatarDrop.addEventListener("dragover", (e) => { e.preventDefault(); avatarDrop.classList.add("dragover"); });
+    avatarDrop.addEventListener("dragleave", (e) => { e.preventDefault(); avatarDrop.classList.remove("dragover"); });
+    avatarDrop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      avatarDrop.classList.remove("dragover");
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // -------- Mundo y jugadores --------
+
+    function isRoadBlockIndex(i) {
+      if (i < 2) return false;
+      const rel = i - 2;
+      const group = Math.floor(rel / 4);
+      const pos = rel % 4;
+      if (pos === 0) return false;
+      const randomLike = (group * 37 + 11) % 100;
+      if (pos === 1 || pos === 2) return true;
+      if (pos === 3) return randomLike >= 60;
+      return false;
+    }
+
+    let worldBuilt = false;
+    function buildWorldStatic() {
+      if (!worldBuilt) {
+        worldEl.innerHTML = "";
+        worldBuilt = true;
+      }
+      worldEl.style.height = WORLD_HEIGHT + "px";
+      const totalBlocks = Math.floor(WORLD_HEIGHT / BLOCK_HEIGHT);
+      for (let i = 0; i < totalBlocks; i++) {
+        const block = document.createElement("div");
+        block.classList.add("block");
+        block.classList.add(isRoadBlockIndex(i) ? "road" : "grass");
+        block.style.top = i * BLOCK_HEIGHT + "px";
+        worldEl.appendChild(block);
+      }
+    }
+
+    function updateCamera() {
+      cameraWorldY = myWorldY;
+      const halfView = viewHeight / 2;
+      if (cameraWorldY < halfView) cameraWorldY = halfView;
+      if (cameraWorldY > WORLD_HEIGHT - halfView) cameraWorldY = WORLD_HEIGHT - halfView;
+      const offsetY = -cameraWorldY + halfView;
+      worldEl.style.transform = `translateY(${offsetY}px)`;
+    }
+
+    function createPlayerElement(id, isSelf, name, avatarData, userId) {
       const el = document.createElement("div");
-      el.className = "player" + (isSelf ? " self" : "");
-      el.dataset.id = id;
+      const tier = userId && skinTiers ? (skinTiers[userId] || 0) : 0;
 
-      const img = document.createElement("img");
-      img.src = "gallina.png"; // pon tu imagen de gallina en /public
-      img.alt = "Gallina";
+      let className = "player";
+      if (isSelf) className += " self";
+      if (tier >= 1 && tier <= 4) className += " tier-" + tier;
+      el.className = className;
+
+      el.dataset.id = id;
 
       const label = document.createElement("div");
       label.className = "player-label";
-      label.textContent = isSelf ? "Tú" : id.slice(0, 4);
+      label.textContent = name || (isSelf ? "Tú" : id.slice(0, 4));
 
-      el.appendChild(img);
+      const body = document.createElement("div");
+      body.className = "player-body";
+
+      const img = document.createElement("img");
+      img.className = "avatar-img";
+      img.src = avatarData && avatarData.trim() ? avatarData.trim() : "gallina.png";
+      img.alt = name || "Jugador";
+      img.onerror = () => {
+        img.onerror = null;
+        img.src = "gallina.png";
+      };
+
+      if (tier >= 1 && tier <= 4) {
+        const crown = document.createElement("div");
+        crown.className = "crown";
+
+        const crownImg = document.createElement("img");
+        if (tier === 1) crownImg.src = "crown_purple.png";
+        else if (tier === 2) crownImg.src = "crown_gold.png";
+        else if (tier === 3) crownImg.src = "crown_silver.png";
+        else if (tier === 4) crownImg.src = "crown_bronze.png";
+
+        crown.appendChild(crownImg);
+        body.appendChild(crown);
+      }
+
+      body.appendChild(img);
+      el.appendChild(body);
       el.appendChild(label);
-      game.appendChild(el);
+      worldEl.appendChild(el);
       return el;
     }
 
-    function updatePlayerPositionEl(id, x, y) {
-      const el = players[id];
-      if (!el) return;
-      el.style.left = x + "px";
-      el.style.top = y + "px";
+    function updatePlayerPositionEl(id, worldX, worldY) {
+      const data = players[id];
+      if (!data || !data.el) return;
+      data.el.style.left = worldX + "px";
+      data.el.style.top = worldY + "px";
     }
 
-    // --- Eventos de Socket.IO ---
+    function rebuildAllPlayers() {
+      // borrar elementos actuales
+      for (const id in players) {
+        const p = players[id];
+        if (p.el) {
+          p.el.remove();
+          p.el = null;
+        }
+      }
+      // recrear con tiers actuales
+      for (const id in players) {
+        const p = players[id];
+        const isSelf = id === socket.id;
+        const el = createPlayerElement(id, isSelf, p.name, p.avatarData, p.userId);
+        p.el = el;
+        updatePlayerPositionEl(id, p.worldX, p.worldY);
+      }
+    }
 
-    socket.on("connect", () => {
-      myId = socket.id;
+    function syncCars(cars) {
+      const seen = new Set();
+      for (const car of cars) {
+        seen.add(car.id);
+        let el = carsEls.get(car.id);
+        if (!el) {
+          el = document.createElement("div");
+          el.className = "car";
+          worldEl.appendChild(el);
+          carsEls.set(car.id, el);
+        }
+        el.style.left = car.worldX + "px";
+        el.style.top = car.worldY + "px";
+      }
+      for (const [id, el] of carsEls.entries()) {
+        if (!seen.has(id)) {
+          el.remove();
+          carsEls.delete(id);
+        }
+      }
+    }
+
+    function syncCoins(coins) {
+      const seen = new Set();
+      for (const coin of coins) {
+        seen.add(coin.id);
+        let el = coinEls.get(coin.id);
+        if (!el) {
+          el = document.createElement("div");
+          el.className = "coin " + (coin.type === "road" ? "road" : "grass");
+          worldEl.appendChild(el);
+          coinEls.set(coin.id, el);
+        } else {
+          el.className = "coin " + (coin.type === "road" ? "road" : "grass");
+        }
+        el.style.left = coin.worldX + "px";
+        el.style.top = coin.worldY + "px";
+      }
+
+      if (coins.length < lastCoinCount) {
+        playSfx("coin");
+      }
+      lastCoinCount = coins.length;
+
+      for (const [id, el] of coinEls.entries()) {
+        if (!seen.has(id)) {
+          el.remove();
+          coinEls.delete(id);
+        }
+      }
+    }
+
+    function resetLocalWorldState() {
+      for (const [, el] of carsEls) el.remove();
+      carsEls.clear();
+      for (const [, el] of coinEls) el.remove();
+      coinEls.clear();
+      lastCoinCount = 0;
+      gameEnded = false;
+      updateLevelBanner(0, 0);
+      // NO tocamos players aquí; currentPlayers y rebuildAllPlayers se encargan
+    }
+
+    function formatMs(ms) {
+      const totalSeconds = ms / 1000;
+      const s = Math.floor(totalSeconds);
+      const decimals = Math.floor((totalSeconds - s) * 10);
+      return `${s}.${decimals}s`;
+    }
+
+    // -------- Socket eventos --------
+
+    socket.on("connect", () => { myId = socket.id; });
+
+    socket.on("worldConfig", (cfg) => {
+      BLOCK_HEIGHT = cfg.blockHeight;
+      WORLD_HEIGHT = cfg.worldHeight;
+      CHECKPOINT_Y = cfg.checkpointY;
+      buildWorldStatic();
+      updateCamera();
     });
 
     socket.on("currentPlayers", (serverPlayers) => {
-      // Crear elementos para todos los jugadores ya conectados
+      // limpiar players actuales
+      for (const id in players) {
+        if (players[id].el) players[id].el.remove();
+        delete players[id];
+      }
+
+      // guardar datos lógicos
       for (const id in serverPlayers) {
         const p = serverPlayers[id];
-        const isSelf = id === socket.id;
-        const el = createPlayerElement(id, isSelf);
-        players[id] = el;
-        updatePlayerPositionEl(id, p.x, p.y);
-        if (isSelf) {
-          myX = p.x;
-          myY = p.y;
+        players[id] = {
+          name: p.name,
+          avatarData: p.avatarData,
+          userId: p.userId,
+          worldX: p.worldX,
+          worldY: p.worldY,
+          el: null
+        };
+
+        if (id === socket.id) {
+          myWorldX = p.worldX;
+          myWorldY = p.worldY;
+          myAvatarData = p.avatarData;
         }
       }
+
+      // recrear elementos con tiers actuales
+      rebuildAllPlayers();
+      updateCamera();
     });
 
     socket.on("newPlayer", (p) => {
       if (players[p.id]) return;
-      const el = createPlayerElement(p.id, false);
-      players[p.id] = el;
-      updatePlayerPositionEl(p.id, p.x, p.y);
+
+      players[p.id] = {
+        name: p.name,
+        avatarData: p.avatarData,
+        userId: p.userId,
+        worldX: p.worldX,
+        worldY: p.worldY,
+        el: null
+      };
+
+      const isSelf = p.id === socket.id;
+      const el = createPlayerElement(p.id, isSelf, p.name, p.avatarData, p.userId);
+      players[p.id].el = el;
+      updatePlayerPositionEl(p.id, p.worldX, p.worldY);
     });
 
     socket.on("playerMoved", (p) => {
-      updatePlayerPositionEl(p.id, p.x, p.y);
+      if (players[p.id]) {
+        players[p.id].worldX = p.worldX;
+        players[p.id].worldY = p.worldY;
+      }
+      updatePlayerPositionEl(p.id, p.worldX, p.worldY);
+      if (p.id === myId) {
+        myWorldX = p.worldX;
+        myWorldY = p.worldY;
+        updateCamera();
+      }
     });
 
     socket.on("playerDisconnected", (id) => {
-      const el = players[id];
-      if (el) {
-        el.remove();
-        delete players[id];
-      }
+      const data = players[id];
+      if (data && data.el) data.el.remove();
+      delete players[id];
     });
 
-    // --- Controles de movimiento ---
+    socket.on("carsUpdate", (cars) => syncCars(cars));
+    socket.on("coinsUpdate", (coins) => syncCoins(coins));
+
+    socket.on("playerHit", () => {
+      playSfx("hit");
+    });
+
+    socket.on("gameOver", (data) => {
+      const { winnerId, winnerName, level, score, maxLevel, bestTimes } = data;
+      winnerNameBig.textContent = winnerName;
+      const scoreText = typeof score === "number" ? score.toFixed(2) : "0.00";
+      gameOverText.textContent = `${winnerName} alcanzó el nivel ${level}/${maxLevel} con ${scoreText} puntos y ganó la partida.`;
+      gameEnded = true;
+      gameOverRanking.innerHTML = renderRankingTable(bestTimes || []);
+      gameOverOverlay.style.display = "flex";
+
+      if (myId && winnerId === myId) playSfx("win");
+      else playSfx("lose");
+    });
+
+    socket.on("gameRestarted", () => {
+      gameOverOverlay.style.display = "none";
+      resetLocalWorldState();
+    });
+
+    socket.on("bestTimesUpdate", (list) => {
+      recordsList.innerHTML = renderRankingTable(list);
+    });
+
+    socket.on("skinTiersUpdate", (tiers) => {
+      skinTiers = tiers || {};
+      // reaplicar coronas y brillos a todos los jugadores ya existentes
+      rebuildAllPlayers();
+    });
+
+    socket.on("chatMessage", (msg) => addChatMessage(msg));
+
+    socket.on("scoreBoard", (list) => {
+      renderScoreBoard(list);
+      updateMyLevelFromScoreboard(list);
+    });
+
+    // -------- Chat, marcador, ranking --------
+
+    function formatTime(ts) {
+      const d = new Date(ts);
+      const h = d.getHours().toString().padStart(2,"0");
+      const m = d.getMinutes().toString().padStart(2,"0");
+      return `${h}:${m}`;
+    }
+
+    function addChatMessage(msg) {
+      const div = document.createElement("div");
+      div.className = "chat-message";
+      const safeName = msg.name || "Jugador";
+      const safeText = msg.text || "";
+      div.innerHTML = `<span class="name">${safeName}</span><span class="time">${formatTime(msg.time)}</span>: ${safeText}`;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function sendChat() {
+      const text = chatInput.value.trim();
+      if (!text) return;
+      socket.emit("chatMessage", text);
+      chatInput.value = "";
+    }
+    chatSendBtn.addEventListener("click", sendChat);
+    chatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); sendChat(); }
+    });
+
+    function renderScoreBoard(list) {
+      scoreList.innerHTML = "";
+      list.forEach((p, index) => {
+        const row = document.createElement("div");
+        row.className = "score-row";
+        row.innerHTML = `<span class="name">${index+1}. [Lv ${p.level}] ${p.name}</span><span class="score">${p.score}</span>`;
+        scoreList.appendChild(row);
+      });
+    }
+
+    function renderRankingTable(list) {
+      if (!list || !list.length) {
+        return `<div style="color:#6b7280;font-size:0.8rem;">Sin récords todavía</div>`;
+      }
+      let html = "";
+      list.forEach((r, index) => {
+        const timeText = formatMs(r.bestTimeMs || 0);
+        html += `
+          <div class="record-row">
+            <span class="name">${index+1}. ${r.name}</span>
+            <span class="time">${timeText}</span>
+          </div>
+        `;
+      });
+      return html;
+    }
 
     function sendMyPosition() {
-      socket.emit("playerMove", { x: myX, y: myY });
+      socket.emit("playerMove", { worldX: myWorldX, worldY: myWorldY });
     }
 
     window.addEventListener("keydown", (e) => {
-      if (!myId) return;
+      if (!myId || gameEnded) return;
       let changed = false;
-
       if (e.key === "ArrowLeft") {
-        myX = Math.max(20, myX - moveStep);
+        myWorldX = Math.max(40, myWorldX - moveStep);
         changed = true;
       } else if (e.key === "ArrowRight") {
-        myX = Math.min(gameWidth - 20, myX + moveStep);
+        myWorldX = Math.min(viewWidth - 40, myWorldX + moveStep);
         changed = true;
       } else if (e.key === "ArrowUp") {
-        myY = Math.max(40, myY - moveStep);
+        myWorldY = Math.max(40, myWorldY - moveStep);
         changed = true;
       } else if (e.key === "ArrowDown") {
-        myY = Math.min(gameHeight - 40, myY + moveStep);
+        myWorldY = Math.min(WORLD_HEIGHT - 40, myWorldY + moveStep);
         changed = true;
       }
-
       if (changed) {
-        updatePlayerPositionEl(myId, myX, myY);
+        updatePlayerPositionEl(myId, myWorldX, myWorldY);
+        updateCamera();
         sendMyPosition();
       }
     });
 
+    function updateMyLevelFromScoreboard(list) {
+      if (!myId) return;
+      const me = list.find(p => p.id === myId);
+      if (!me) return;
+      updateLevelBanner(me.level || 0, me.score || 0);
+    }
+
+    function updateLevelBanner(level, score) {
+      const scoreText = typeof score === "number" ? score.toFixed(1) : "0.0";
+      levelBanner.textContent = `Nivel ${level} · ${scoreText} pts`;
+    }
+
+    // -------- Login / registro --------
+
+    function showLoginError(msg) {
+      loginErrorEl.textContent = msg || "";
+    }
+
     startBtn.addEventListener("click", () => {
-      overlay.style.display = "none";
+      const username = (usernameInput.value || "").trim();
+      const password = (passwordInput.value || "").trim();
+      const displayName = (displayNameInput.value || "").trim();
+
+      if (!username || !password) {
+        showLoginError("Debes ingresar usuario y contraseña.");
+        return;
+      }
+      showLoginError("");
+
+      socket.emit("joinGame", {
+        username,
+        password,
+        displayName,
+        avatarData: myAvatarData
+      }, (resp) => {
+        if (!resp || !resp.ok) {
+          showLoginError(resp && resp.error ? resp.error : "Error al entrar.");
+          return;
+        }
+
+        myUserId = resp.userId || null;
+
+        overlay.style.display = "none";
+        gameEnded = false;
+        updateLevelBanner(0, 0);
+        playMusic();
+      });
+    });
+
+    playAgainBtn.addEventListener("click", () => {
+      socket.emit("restartGame");
     });
   </script>
 </body>
